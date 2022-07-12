@@ -8,7 +8,7 @@ import {getAuth} from "@firebase/auth";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "AIzaSyC4hqxCOWSRi02Cf5Tj6J4eqzDiGXqRHzQ",
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: "netflix-clone-tutorial-dbc6a.firebaseapp.com",
     projectId: "netflix-clone-tutorial-dbc6a",
     storageBucket: "netflix-clone-tutorial-dbc6a.appspot.com",

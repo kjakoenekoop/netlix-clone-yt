@@ -2,9 +2,26 @@ import Head from "next/head";
 import Link from "next/link";
 import useAuth from "../hooks/useAuth";
 import {CheckIcon} from "@heroicons/react/outline";
+import {Product} from "@stripe/firestore-stripe-payments";
+import Table from "./Table";
+import {useState} from "react";
+import Loader from "./Loader";
+import {loadCheckout} from "../lib/stripe";
 
-const Plans = () => {
-    const {logout} = useAuth()
+interface Props {
+    plans: Product[]
+}
+
+const Plans = ({plans}: Props) => {
+    const {logout, user} = useAuth()
+    const [selectedPlan, setSelectedPlan] = useState<Product>(plans[2])
+    const [isBillingLoading, setIsBillingLoading] = useState(false)
+
+    const subscribeToPlan = async () => {
+        if(!user) return
+        loadCheckout(selectedPlan.prices[0].id!)
+        setIsBillingLoading(true)
+    }
 
     return (
         <div>
@@ -28,7 +45,7 @@ const Plans = () => {
                 </button>
             </header>
 
-            <main className={`pt-28 px-5 max-w-5xl pb-12 transition-all`}>
+            <main className={`mx-auto pt-28 px-5 max-w-5xl pb-12 transition-all md:px-10`}>
                 <h1 className={`mb-3 text-3xl font-medium`}>Choose the plan that's right for you</h1>
                 <ul>
                     <li className={`flex items-center gap-x-2 text-lg`}>
@@ -46,20 +63,27 @@ const Plans = () => {
                 </ul>
 
                 <div className={`mt-4 flex flex-col space-y-4`}>
-                    <div className={`flex w-full items-center justify-end self-end md:w-355`}>
-                        <div className={`planBox`}>
-                            standard
-                        </div>
-                        <div className={`planBox`}>
+                    <div className={`flex w-full items-center justify-end self-end md:w-3/5`}>
+                        {plans.map(plan => (
+                            <div onClick={() => setSelectedPlan(plan)}
+                                 className={`planBox ${selectedPlan?.id === plan.id ? "opacity-100" : "opacity-60"}`}
+                                 key={plan.id}>
+                                {plan.name}
+                            </div>
+                        ))}
 
-                        </div>
-                        <div className={`planBox`}>
-
-                        </div>
                     </div>
 
-                    {/*table*/}
-                    <button>Subscribe</button>
+                    <Table plans={plans} selectedPlan={selectedPlan}/>
+
+                    <button disabled={!selectedPlan || isBillingLoading}
+                            className={`mx-auto w-11/12 rounded bg-[#e50914] py-4 text-xl shadow hover:bg-[#f6121d] md:w-[420px] ${isBillingLoading && 'opacity-60'}`}
+                            onClick={subscribeToPlan}
+                    >
+                        {isBillingLoading
+                            ? (<Loader color={`dark:fill-grey-900`}/>)
+                            : 'Subscribe'}
+                    </button>
                 </div>
             </main>
         </div>

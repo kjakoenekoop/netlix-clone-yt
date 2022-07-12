@@ -4,10 +4,14 @@ import {modalState, movieState} from "../atoms/modalAtom";
 import {PlusIcon, ThumbUpIcon, VolumeOffIcon, VolumeUpIcon, XIcon} from "@heroicons/react/outline";
 import {useEffect, useState} from "react";
 import {Genre, Movie} from "../types";
-import {DocumentData} from "@firebase/firestore";
+import {collection, deleteDoc, doc, DocumentData, onSnapshot, setDoc} from "@firebase/firestore";
 import {Element} from '../types'
 import ReactPlayer from "react-player/lazy";
 import {FaPlay} from "react-icons/fa";
+import {CheckIcon} from "@heroicons/react/solid";
+import {db} from "../lib/firebase";
+import useAuth from "../hooks/useAuth";
+import {toast, Toaster} from "react-hot-toast";
 
 const Modal = () => {
     const [showModal, setShowModal] = useRecoilState(modalState)
@@ -15,6 +19,9 @@ const Modal = () => {
     const [trailer, setTrailer] = useState('')
     const [genres, setGenres] = useState<Genre[]>([])
     const [muted, setMuted] = useState(false)
+    const [addedToList, setAddedToList] = useState(false)
+    const {user} = useAuth()
+    const [movies, setMovies] = useState<DocumentData[] | Movie[]>([])
 
     useEffect(() => {
         if (!movie) return
@@ -36,6 +43,37 @@ const Modal = () => {
         fetchMovie()
     }, [movie])
 
+    useEffect(() => {
+        if (!user) return
+        return onSnapshot(
+            collection(db, 'customers', user.uid, 'myList'),
+            snapshot => setMovies(snapshot.docs)
+        )
+    }, [db, movie?.id])
+
+    useEffect(() => {
+        setAddedToList(
+            movies.findIndex(result => result.data().id === movie?.id) !== -1
+        )
+    }, [movies])
+
+    const handleList = async () => {
+        if (addedToList) {
+            await deleteDoc(
+                doc(db, 'customers', user!.uid, 'myList', movie?.id.toString()!)
+            )
+            toast(`${movie?.title || movie?.original_name} has been removed from My List.`, {
+                duration: 8000
+            })
+        } else {
+            await setDoc(
+                doc(db, 'customers', user!.uid, 'myList', movie?.id.toString()!), {...movie}
+            ).catch(e => console.log(e.message))
+            toast(`${movie?.title || movie?.original_name} has been added to My List.`, {
+                duration: 8000
+            })
+        }
+    }
 
     const handleClose = () => setShowModal(false)
 
@@ -45,6 +83,7 @@ const Modal = () => {
                   className={`fixed !top-7 left-0 right-0 mx-auto w-full max-w-5xl overflow-y-scroll rounded-md scrollbar-hide`}
         >
             <>
+                <Toaster position={`bottom-center`}/>
                 <button onClick={handleClose}
                         className={`modalButton absolute right-5 top-5 !z-40 h-9 w-9 border-none bg-[#181818] hover:bg-[#181818]`}>
                     <XIcon className={`h-6 w-6`}/>
@@ -66,8 +105,13 @@ const Modal = () => {
                                 Play
                             </button>
 
-                            <button className={`modalButton`}>
-                                <PlusIcon className={`h-7 w-7`}/>
+                            <button className={`modalButton`}
+                                    onClick={handleList}
+                            > {
+                                addedToList
+                                    ? <CheckIcon className={`h-7 w-7`}/>
+                                    : <PlusIcon className={`h-7 w-7`}/>
+                            }
                             </button>
 
                             <button className={`modalButton`}>
@@ -88,7 +132,8 @@ const Modal = () => {
                 <div className={`flex space-x-16 rounded-b-md bg-[#181818] px-10 py-8`}>
                     <div className={`space-y-6 text-lg`}>
                         <div className={`flex items-center space-x-2 text-sm`}>
-                            <p className={`font-semibold text-green-400`}>{movie?.vote_average * 10}% Match</p>
+                            <p className={`font-semibold text-green-400`}>{Math.round(movie?.vote_average * 10)}%
+                                Match</p>
                             <p className={`font-light`}>{movie?.release_date || movie?.first_air_date}</p>
                             <div
                                 className={`flex h-4 items-center justify-center rounded border border-white/40 px-1.5 text-xs`}>HD
