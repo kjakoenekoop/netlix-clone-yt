@@ -10,6 +10,7 @@
     "@emotion/styled": "^11.9.3",
     "@heroicons/react": "^1.0.6",
     "@mui/material": "^5.8.7",
+    "@stripe/firestore-stripe-payments": "^0.0.6",
     "firebase": "^9.9.0",
     "next": "latest",
     "react": "18.1.0",
